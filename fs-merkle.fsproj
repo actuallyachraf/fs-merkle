@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <RootNamespace>fs_merkle</RootNamespace>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>netcoreapp2.2</TargetFramework>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="Base16.fs" />
+    <Compile Include="Hash.fs" />
+    <Compile Include="Merkle.fs" />
+    <Compile Include="Program.fs" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="BouncyCastle" Version="1.8.5" NoWarn="NU1701" />
+  </ItemGroup>
+</Project>
