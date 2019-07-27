@@ -44,7 +44,7 @@ module Tree =
 
     let rec proof (items : byte [] []) (index : int) =
         match items.Length with
-        | 1 -> Some([ {Value = (compute items.[index] |> bytes); RightOp = false}])
+        | 1 -> Some([ {Value = (compute (Array.append (bytes leafPrefix) items.[index]) |> bytes); RightOp = false}])
         | 0 -> None
         | _ ->
             match index with
