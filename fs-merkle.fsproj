@@ -8,6 +8,7 @@
     <Compile Include="Base16.fs" />
     <Compile Include="Hash.fs" />
     <Compile Include="Merkle.fs" />
+    <Compile Include="Sparse.fs" />
     <Compile Include="Program.fs" />
   </ItemGroup>
   <ItemGroup>
