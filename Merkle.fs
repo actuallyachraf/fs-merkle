@@ -12,9 +12,6 @@ module Tree =
         { Value : byte []
           RightOp : bool }
 
-    let emptyAuditHash = {Value = Array.zeroCreate 32;RightOp=false}
-
-
     let compAuditHash x =
         { Value = (Hash.compute x) |> bytes
           RightOp = false }
@@ -31,8 +28,8 @@ module Tree =
         | 1 ->
             Hash.computeMultiple (Seq.ofList [ Hash.bytes leafPrefix
                                                items.[0] ])
-        | x ->
-            let k = prevPowOf2 x
+        | n ->
+            let k = prevPowOf2 n
             let left = root items.[..(k - 1)]
             let right = root items.[k..]
 
@@ -44,54 +41,40 @@ module Tree =
 
     let rec proof (items : byte [] []) (index : int) =
         match items.Length with
-        | 1 -> Some([ {Value = (compute (Array.append (bytes leafPrefix) items.[index]) |> bytes); RightOp = false}])
         | 0 -> None
-        | _ ->
+        | 1 -> Some(List.empty<AuditHash>)
+        | n ->
             match index with
             | x ->
-                if x < 0 || x > items.Length then None
+                if x < 0 || x > n then None
                 else
-                    let k = prevPowOf2 items.Length
-                    let mutable left = items.[..(k - 1)]
-                    let mutable right = items.[k..]
-                    let mutable rightOp = true
-                    let mutable i = index
-                    match (i >= k) with
-                    | true ->
-                        i <- i - k
-                        let mutable tmp = left
-                        left <- right
-                        right <- tmp
-                        rightOp <- false
-                    | false -> ()
-                    let res = proof left i
-                    match res with
-                    | None -> None
-                    | Some(x) ->
-                        let v = root right
-
-                        let app =
-                            [ { Value = bytes v
-                                RightOp = rightOp } ]
-
-                        let ret = x @ app
-                        Some(ret)
+                    let k = prevPowOf2 n
+                    if x < k then
+                        let leftPath =
+                            (proof items.[..(k - 1)] x).Value
+                            @ [ { Value = bytes (root items.[k..])
+                                  RightOp = true } ]
+                        Some(leftPath)
+                    else
+                        let rightPath =
+                            (proof items.[k..] (x - k)).Value
+                            @ [ { Value = bytes (root items.[..(k - 1)])
+                                  RightOp = false } ]
+                        Some(rightPath)
 
     let rec verify (items : byte [] []) (index : int)
             (auditpath : AuditHash list) =
         // we add a leaf prefix to the item to prove and hash it
         let mutable hash =
             compute (Array.append (bytes leafPrefix) items.[index])
-        // the first element in the audit path is the hash of the item to prove we skip it
-        for h in auditpath.[1..] do
-                let proof = h.Value
-                let rightop = h.RightOp
-                if rightop then
-                    let concatright = Array.append (bytes hash) proof
-                    hash <- compute
-                                (Array.append (bytes interiorPrefix) concatright)
-                else
-                    let concatleft = Array.append proof (bytes hash)
-                    hash <- compute
-                                (Array.append (bytes interiorPrefix) concatleft)
+        for h in auditpath do
+            let proof = h.Value
+            let rightop = h.RightOp
+            if rightop then
+                let concatright = Array.append (bytes hash) proof
+                hash <- compute
+                            (Array.append (bytes interiorPrefix) concatright)
+            else
+                let concatleft = Array.append proof (bytes hash)
+                hash <- compute (Array.append (bytes interiorPrefix) concatleft)
         hash = (root items)
